@@ -3,14 +3,14 @@ package cloud
 import (
 	"cloudpunk/utils"
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/nats-io/nats.go"
 	"github.com/yuin/gopher-lua"
-	"time"
 )
 
 func StartLuaServerless() {
-	L := lua.NewState()
-	defer L.Close()
 
 	// TODO: It would be interesting to add another handler
 	// to do a sort of a php thingy with go templates + lua code
@@ -18,9 +18,17 @@ func StartLuaServerless() {
 	luaServe := "cloudpunk.serverless.*"
 	// this code here is a example of a LUA handler
 	NatsConn.Subscribe(luaServe, func(msg *nats.Msg) {
+		var L = lua.NewState()
+		defer L.Close()
+
 		path := utils.ExtractWildcardValues(luaServe, msg.Subject)[0]
 
-		fn_source := StorageGet(path)
+		fn_source := string(StorageGet(path))
+
+		if fn_source == "" {
+			msg.Respond([]byte(""))
+			return
+		}
 
 		if err := L.DoString(string(fn_source)); err != nil {
 			msg.Respond([]byte(err.Error()))
@@ -33,6 +41,7 @@ func StartLuaServerless() {
 		}, lua.LString(msg.Data))
 
 		if err != nil {
+			log.Println(err.Error())
 			msg.Respond([]byte(err.Error()))
 		}
 
@@ -41,10 +50,10 @@ func StartLuaServerless() {
 	})
 }
 
-func LuaRun(label string) (string, error) {
+func LuaRun(label string, data []byte) (string, error) {
 	var fnpath = fmt.Sprintf("cloudpunk.serverless.%s", label)
 	fmt.Println(fnpath)
-	result, err := NatsConn.Request(fnpath, []byte("hello"), 30*time.Second)
+	result, err := NatsConn.Request(fnpath, data, 30*time.Second)
 	if err != nil {
 		return "", err
 	}

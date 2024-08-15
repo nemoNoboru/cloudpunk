@@ -3,6 +3,7 @@ package main
 import (
 	"cloudpunk/cloud"
 	"cloudpunk/handlers"
+	"cloudpunk/upload"
 	"flag"
 	"fmt"
 	"log"
@@ -16,6 +17,12 @@ func serve(port string) {
 
 	cloud.StartLuaServerless()
 	cloud.StartStorageServer()
+
+	// bootstrap with everything in /content
+	err := upload.UploadAllFilesInDir("./content")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 
 	http.ListenAndServe(port, nil)
 }

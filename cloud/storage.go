@@ -3,8 +3,10 @@ package cloud
 import (
 	"cloudpunk/utils"
 	"fmt"
-	"github.com/nats-io/nats.go"
+	"log"
 	"time"
+
+	"github.com/nats-io/nats.go"
 )
 
 // Connect to main nats server
@@ -31,6 +33,11 @@ func StorageLoad(label string, data []byte) error {
 }
 
 func StartStorageServer() {
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
 	storageLoad := "cloudpunk.storage.load.*"
 	NatsConn.Subscribe(storageLoad, func(msg *nats.Msg) {
 		path := utils.ExtractWildcardValues(storageLoad, msg.Subject)[0]
