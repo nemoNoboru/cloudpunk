@@ -25,6 +25,11 @@ func StorageGet(label string) []byte {
 	return result.Data
 }
 
+func StorageLoad(label string, data []byte) error {
+	storePath := fmt.Sprintf("cloudpunk.storage.load.%s", label)
+	return NatsConn.Publish(storePath, data)
+}
+
 func StartStorageServer() {
 	storageLoad := "cloudpunk.storage.load.*"
 	NatsConn.Subscribe(storageLoad, func(msg *nats.Msg) {

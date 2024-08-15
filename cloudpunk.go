@@ -1,7 +1,8 @@
 package main
 
 import (
-	handlers "cloudpunk/http"
+	"cloudpunk/cloud"
+	"cloudpunk/handlers"
 	"flag"
 	"fmt"
 	"log"
@@ -10,12 +11,13 @@ import (
 )
 
 func serve(port string) {
-
 	http.HandleFunc("/api/*", handlers.HandleAPI)
 	http.HandleFunc("/*", handlers.HandleStatic)
 
-	http.ListenAndServe(port, nil)
+	cloud.StartLuaServerless()
+	cloud.StartStorageServer()
 
+	http.ListenAndServe(port, nil)
 }
 
 // ServeCommand handles the 'serve' command
@@ -26,9 +28,7 @@ func ServeCommand() {
 	// Parse the flags
 	flag.Parse()
 
-	// Your serve logic here
 	serve(*port)
-	// For example: start a server or perform actions related to serving
 }
 
 // NOTE: Would be nice to be able to load a entire folder
@@ -45,12 +45,6 @@ func UploadCommand() {
 	filePath := os.Args[2]
 	destination := os.Args[3]
 
-	// Parse the flags
-	flag.Parse()
-
-	fmt.Println(filePath)
-	fmt.Println(destination)
-
 	// Your upload logic here
 	if filePath == "" || destination == "" {
 		fmt.Println("Error: -file and -dest flags are required for the upload command")
@@ -62,30 +56,15 @@ func UploadCommand() {
 		log.Fatal(err.Error())
 	}
 
-	storagePath := fmt.Sprintf("cloudpunk.storage.load.%s", destination)
+	cloud.StorageLoad(destination, source)
 
-	fmt.Println(source)
-
-	// TODO: add here a new function to upload to storage
-
-	// nc.Publish(storagePath, source)
-	// if err != nil {
-	// 	log.Fatal(err.Error())
-	// }
-	//
-	log.Printf("uploaded file at %s \n", storagePath)
+	log.Printf("uploaded file at %s \n", destination)
 }
 
 func main() {
-	// TODO: Check the closing and drain of nats
+	defer cloud.NatsConn.Drain()
+	defer cloud.NatsConn.Close()
 
-	// if err != nil {
-	// 	log.Fatal(err.Error())
-	// }
-	//
-	// defer nc.Drain()
-	// defer nc.Close()
-	//
 	if len(os.Args) < 2 {
 		fmt.Println("Expected 'serve' or 'upload' command")
 		os.Exit(1)
