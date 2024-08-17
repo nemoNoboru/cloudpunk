@@ -14,6 +14,7 @@ import (
 func serve(port string) {
 	http.HandleFunc("/api/*", handlers.HandleAPI)
 	http.HandleFunc("/*", handlers.HandleStatic)
+	http.HandleFunc("/page/*", handlers.HandlePage)
 
 	cloud.StartLuaServerless()
 	cloud.StartStorageServer()
